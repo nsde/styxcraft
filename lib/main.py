@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
 import os
-import requests as rq
 import tkinter as tk
+import requests as rq
+import subprocess as sp
 from tkinter import messagebox
+import minecraft_launcher_lib as ml
 
 # Theme
 fgColor = "white"
@@ -18,14 +20,9 @@ win = tk.Tk()
 win.title("SML")
 win.config(bg=bgColor)
 
-# Check Java Path
-os.system('where java > javapath.txt')
-with open (os.getcwd() + '\\javapath.txt') as outlog:
-    outdata = outlog.readlines()
-javapath =outdata[0]
 
 def start():
-    username = str(userInp.get())
+    email = str(mailInp.get())
     password = str(pwInp.get())
 
     try:
@@ -42,24 +39,25 @@ def start():
     else:
         titleTxt["fg"] = lightColor
 
-    usercheck = rq.get(f"https://api.mojang.com/users/profiles/minecraft/{username}")
+    version = "1.16.3"
+    print(version)
 
-    if usercheck.text == "":
-        userInp["fg"] = errorColor
-        tk.messagebox.showerror(title="ERROR", message="Name incorrect")
-        return
-    else:
-        userInp["fg"] = lightColor
+    directory = ml.utils.get_minecraft_directory()
 
+    login_data = ml.account.login_user(email, password)
 
-    # rqout = rq.get(f"https://login.minecraft.net?user={username}&password={password}&version=13")
-
-
-    javacommand = f'cd "C:/Program Files (x86)/Common Files/Oracle/Java/javapath/"'
-    startcommand = f'java.exe -Xms512m -Xmx1g -Djava.library.path=natives/ -cp "minecraft.jar;lwjgl.jar;lwjgl_util.jar" net.minecraft.client.Minecraft {username} {sessionid}'
-    os.system(javacommand)
-    os.system(startcommand)
-
+    options = {
+    "username": login_data["selectedProfile"]["name"],
+    "uuid": login_data["selectedProfile"]["id"],
+    "token": login_data["accessToken"],
+    "jvmArguments": ["-Xmx1G", "-XX:+UnlockExperimentalVMOptions", "-XX:+UseG1GC", "-XX:G1NewSizePercent=20", "-XX:G1ReservePercent=20", "-XX:MaxGCPauseMillis=50", "-XX:G1HeapRegionSize=32M"],
+    "launcherName": "StyxCraft",
+    "launcherVersion": "1.0",
+    "enableLoggingConfig": False,
+    }
+    minecraft_command = ml.command.get_minecraft_command(version, directory, options)
+    print(minecraft_command)
+    sp.call(minecraft_command)
 
 titleTxt = tk.Label(win, text="Styx", font=('Calibri Light', 50), bg=bgColor, fg=fgColor)
 titleTxt.pack()
@@ -70,11 +68,11 @@ inputFrame1.pack()
 inputFrame2 = tk.Frame(win)
 inputFrame2.pack()
 
-userTxt = tk.Label(inputFrame1, text="Username", font=('Calibri Light', 20, "bold"), bg=bgColor, fg=fgColor)
-userTxt.pack(side="left")
+mailTxt = tk.Label(inputFrame1, text="E-Mail", font=('Calibri Light', 20, "bold"), bg=bgColor, fg=fgColor)
+mailTxt.pack(side="left")
 
-userInp = tk.Entry(inputFrame1, font=('Calibri Light', 20), bg=bgColor, fg=fgColor)
-userInp.pack(side="right")
+mailInp = tk.Entry(inputFrame1, font=('Calibri Light', 20), bg=bgColor, fg=fgColor)
+mailInp.pack(side="right")
 
 pwTxt = tk.Label(inputFrame2, text="Password", font=('Calibri Light', 20, "bold"), bg=bgColor, fg=fgColor)
 pwTxt.pack(side="left")
